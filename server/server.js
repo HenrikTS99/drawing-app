@@ -7,7 +7,6 @@ const { port, mongoDBURL } = getConfig();
 
 import express, { request, response } from "express";
 import mongoose, { mongo } from 'mongoose';
-import booksRoute from './routes/booksRoute.js';
 import cors from 'cors';
 
 const app = express();
@@ -33,8 +32,6 @@ app.get('/', (req, res) => {
   return res.status(234).send('Welcome!')
 });
 
-// Middleware for book requests
-app.use('/books', booksRoute);
 
 // Start the server
 mongoose.connect(mongoDBURL)
