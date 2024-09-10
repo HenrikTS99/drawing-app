@@ -28,7 +28,7 @@ export const useDraw = (onDraw) => {
         }
 
         const computePointInCanvas = (e) => {
-            const canvas = canvasRef.current
+            const canvas = canvasRef.current;
             if (!canvas) return
 
             const rect= canvas.getBoundingClientRect()
