@@ -20,15 +20,77 @@ const io = new Server(server, {
   },
 });
 
+let canvasState = null;
+let users = [];
+const messages = {
+  general: [],
+  room1: [],
+  room2: [],
+  room3: [],
+  room4: []
+};
+
 io.on('connection', (socket) => {
   console.log('connection');
+  
+  socket.on('join-server', (username) => {
+    console.log("join server recieved")
+    const user = {
+      username, 
+      id: socket.id,
+    };
+    users.push(user);
+    io.emit('new-user', users);
+  });
 
+  socket.on('join-room', (roomName, cb) => { //TODO: not safe to use callback from client
+    socket.join(roomName);
+    cb(messages[roomName]);
+  });
+
+  socket.on('send-message', ({content, to, sender, chatName, isChannel }) => {
+    if (isChannel) {
+      const payload = {
+        content, 
+        chatName,
+        sender,
+      };
+      socket.to(to).emit('new-message', payload)
+    } else {
+      const payload = {
+        content, 
+        chatName: sender,
+        sender
+      };
+      socket.to(to).emit('new-message', payload)
+    }
+    if (messages[chatName]) {
+      messages[chatName].push({
+        sender,
+        content
+      });
+    }
+  })
+
+  socket.on('disconnect', () => {
+    users = users.filter(u => u.id !== socket.id);
+    io.emit('new-user', users)
+  })
+  
   // Get canvas state from a client, for a new client
   socket.on('client-ready', () => {
-    socket.broadcast.emit('get-canvas-state');
+    if (canvasState) {
+      console.log('canvasState exists, udating from server storage')
+      socket.emit('canvas-state-from-server', canvasState);
+    } else {
+      console.log('no canvasState in server storage, fetching from clients')
+      socket.broadcast.emit('get-canvas-state');
+    }
+    
   });
 
   socket.on('canvas-state', (state) => {
+    canvasState = state;
     socket.broadcast.emit('canvas-state-from-server', state);
   });
 
@@ -36,7 +98,10 @@ io.on('connection', (socket) => {
     socket.broadcast.emit('draw-line', { prevPoint, currentPoint, color });
   });
 
-  socket.on('clear', () => io.emit('clear'));
+  socket.on('clear', () => {
+    canvasState = null;
+    io.emit('clear');
+  });
 });
 
 // Middleware for parsing request body
