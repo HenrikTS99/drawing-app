@@ -3,20 +3,20 @@ import { useDraw } from '../hooks/useDraw'
 import { ChromePicker } from 'react-color'
 import { io } from 'socket.io-client'
 import { drawLine } from '../utils/drawLine'
-const socket = io('http://localhost:3001')
 
-const Home = () => {
+const DrawBoard = ({ room, socketRef }) => {
+  const socket = socketRef.current
   const [color, setColor] = useState('#000')
   const { canvasRef, onMouseDown, clear } = useDraw(createLine)
 
   useEffect(() => {
     const context = canvasRef.current?.getContext('2d')
 
-    socket.emit('client-ready')
+    socket.emit('client-ready', room)
 
     socket.on('get-canvas-state', () => {
       if (!canvasRef.current?.toDataURL()) return
-      socket.emit('canvas-state', canvasRef.current.toDataURL())
+      socket.emit('canvas-state', { room, state:canvasRef.current.toDataURL() })
     })
 
     socket.on('canvas-state-from-server', (state) => {
@@ -29,11 +29,19 @@ const Home = () => {
     })
 
     socket.on('draw-line', ({ prevPoint, currentPoint, color }) => {
+      console.log('drawing line...')
       if (!context) return
       drawLine({ prevPoint, currentPoint, context, color })
     })
 
-    socket.on('clear', clear)
+    socket.on('clear', (recievedRoom) => {
+      if (recievedRoom === room) {
+        console.log('correct room, clearing')
+        clear()
+      } else {
+        console.log('wrong room to clear', recievedRoom, room)
+      }
+    })
 
     return () => {
       socket.off('get-canvas-state')
@@ -41,21 +49,21 @@ const Home = () => {
       socket.off('draw-line')
       socket.off('clear')
     }
-  }, [canvasRef])
+  }, [canvasRef, room])
 
   function createLine({ prevPoint, currentPoint, context }) {
-    socket.emit('draw-line', { prevPoint, currentPoint, color })
+    socket.emit('draw-line', { room, prevPoint, currentPoint, color })
     drawLine({ prevPoint, currentPoint, context, color })
   }
 
   return (
-    <div className="w-screen h-screen bg-white flex justify-center items-center">
+    <div className="bg-white flex justify-center items-center">
       <div className="flex flex-col gap-10 pr-10">
         <ChromePicker color={color} onChange={(e) => setColor(e.hex)} />
         <button
           type="button"
           className="p-2 rounded-md border border-black"
-          onClick={() => socket.emit('clear')}
+          onClick={() => socket.emit('clear', room)}
         >
           Clear canvas
         </button>
@@ -71,4 +79,4 @@ const Home = () => {
   )
 }
 
-export default Home
+export default DrawBoard

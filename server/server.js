@@ -21,6 +21,15 @@ const io = new Server(server, {
 });
 
 let canvasState = null;
+
+const canvasStates = {
+  general: null,
+  room1: null,
+  room2: null,
+  room3: null,
+  room4: null
+}
+
 let users = [];
 const messages = {
   general: [],
@@ -45,6 +54,7 @@ io.on('connection', (socket) => {
 
   socket.on('join-room', (roomName, cb) => { //TODO: not safe to use callback from client
     socket.join(roomName);
+    console.log('joined room', roomName)
     cb(messages[roomName]);
   });
 
@@ -72,35 +82,38 @@ io.on('connection', (socket) => {
     }
   })
 
+  // Remove user from users when disconnecting
   socket.on('disconnect', () => {
     users = users.filter(u => u.id !== socket.id);
     io.emit('new-user', users)
   })
-  
+
   // Get canvas state from a client, for a new client
-  socket.on('client-ready', () => {
-    if (canvasState) {
+  socket.on('client-ready', (room) => {
+    if (canvasStates[room]) {
       console.log('canvasState exists, udating from server storage')
-      socket.emit('canvas-state-from-server', canvasState);
+      socket.emit('canvas-state-from-server', canvasStates[room]);
     } else {
       console.log('no canvasState in server storage, fetching from clients')
-      socket.broadcast.emit('get-canvas-state');
+      socket.to(room).emit('get-canvas-state');
     }
     
   });
 
-  socket.on('canvas-state', (state) => {
-    canvasState = state;
-    socket.broadcast.emit('canvas-state-from-server', state);
+  socket.on('canvas-state', ({ room, state }) => {
+    canvasStates[room] = state;
+    console.log('saved canvas to room', room)
+    socket.to(room).emit('canvas-state-from-server', state);
   });
 
-  socket.on('draw-line', ({ prevPoint, currentPoint, color }) => {
-    socket.broadcast.emit('draw-line', { prevPoint, currentPoint, color });
+  socket.on('draw-line', ({ room, prevPoint, currentPoint, color }) => {
+    socket.to(room).emit('draw-line', { prevPoint, currentPoint, color });
   });
 
-  socket.on('clear', () => {
-    canvasState = null;
-    io.emit('clear');
+  socket.on('clear', (room) => {
+    canvasStates[room] = null;
+    console.log('Emitting clear for room:', { recievedRoom: room });
+    io.to(room).emit('clear', room);
   });
 });
 

@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react'
 import Form from '../components/UsernameForm'
 import Chat from '../components/Chat'
+import DrawBoard from '../components/DrawBoard'
 import { io } from 'socket.io-client'
 import { produce } from 'immer'
 
@@ -112,7 +113,8 @@ if (connected) {
     currentChat={currentChat}
     toggleChat={toggleChat}
     messages={messages[currentChat.chatName]}
-    />
+    socketRef={socketRef}
+  />
   )
 } else {
   body= (
