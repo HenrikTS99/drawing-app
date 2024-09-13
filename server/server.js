@@ -52,10 +52,9 @@ io.on('connection', (socket) => {
     io.emit('new-user', users);
   });
 
-  socket.on('join-room', (roomName, cb) => { //TODO: not safe to use callback from client
+  socket.on('join-room', (roomName) => {
     socket.join(roomName);
-    console.log('joined room', roomName)
-    cb(messages[roomName]);
+    socket.emit('joined-room', { messages: messages[roomName], room: roomName });
   });
 
   socket.on('send-message', ({content, to, sender, chatName, isChannel }) => {
