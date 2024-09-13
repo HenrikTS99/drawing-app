@@ -57,22 +57,15 @@ io.on('connection', (socket) => {
     socket.emit('joined-room', { messages: messages[roomName], room: roomName });
   });
 
-  socket.on('send-message', ({content, to, sender, chatName, isChannel }) => {
-    if (isChannel) {
-      const payload = {
-        content, 
-        chatName,
-        sender,
-      };
-      socket.to(to).emit('new-message', payload)
-    } else {
-      const payload = {
-        content, 
-        chatName: sender,
-        sender
-      };
-      socket.to(to).emit('new-message', payload)
-    }
+  socket.on('send-message', ({content, sender, chatName}) => {
+
+    const payload = {
+      content, 
+      sender,
+      chatName,
+    };
+    socket.to(chatName).emit('new-message', payload)
+    
     if (messages[chatName]) {
       messages[chatName].push({
         sender,

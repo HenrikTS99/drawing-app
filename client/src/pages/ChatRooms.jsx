@@ -16,7 +16,7 @@ const initialMessagesState = {
 function ChatRooms() {
   const [username, setUsername] = useState("");
   const [connected, setConnected] = useState(false);
-  const [currentChat, setCurrentChat] = useState({ isChannel: true, chatName: "general", recieverId: "" })
+  const [currentChat, setCurrentChat] = useState("general")
   const [connectedRooms, setConnectedRooms ] = useState(['general']);
   const [allUsers, setAllUsers] = useState([]);
   const [messages, setMessages] = useState(initialMessagesState)
@@ -35,14 +35,12 @@ function ChatRooms() {
   function sendMessage() {
     const payload = {
       content: message,
-      to: currentChat.isChannel ? currentChat.chatName : currentChat.recieverId,
       sender: username,
-      chatName: currentChat.chatName,
-      isChannel: currentChat.isChannel
+      chatName: currentChat,
     };
     socketRef.current.emit('send-message', payload);
     const newMessages = produce(messages, draft => {
-      draft[currentChat.chatName].push({
+      draft[currentChat].push({
         sender: username,
         content: message
       });
@@ -51,7 +49,8 @@ function ChatRooms() {
   }
 
   function updateRoomMessages(incomingMessages, room) {
-    // Make sure messages is up to date before setting. If not done trough function other room messages gets deleted.
+    // Make sure messages is up to date before setting. 
+    // If not done trough function other room messages gets deleted.
     setMessages(prevMessages => {
       const newMessages = produce(prevMessages, draft => {
         draft[room] = incomingMessages;
@@ -69,11 +68,8 @@ function ChatRooms() {
   }
 
   function toggleChat(currentChat) {
-    if (!messages[currentChat.chatName]) {
-      const newMessages = produce(messages, draft => {
-        draft[currentChat.chatName] = [];
-      });
-      setMessages(newMessages)
+    if (!messages[currentChat]) {
+      console.error("Chat dosen't exist:", currentChat);
     }
     setCurrentChat(currentChat)
   }
@@ -101,13 +97,14 @@ function ChatRooms() {
           if (draft[chatName]) {
             draft[chatName].push({ content, sender })
           } else {
-            draft[chatName] = [{ content, sender }]
+            console.error("Chat dosen't exist:", chatName);
           }
         });
         return newMessages
       })
-    })
+    });
   }
+
   let body;
   if (connected) {
     body = (
@@ -121,7 +118,7 @@ function ChatRooms() {
       connectedRooms={connectedRooms}
       currentChat={currentChat}
       toggleChat={toggleChat}
-      messages={messages[currentChat.chatName]}
+      messages={messages[currentChat]}
       socketRef={socketRef}
     />
     )

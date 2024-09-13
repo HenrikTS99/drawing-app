@@ -11,13 +11,8 @@ const rooms = [
 
 function Chat(props) {
     function renderRooms(room) {
-        const currentChat = {
-            chatName: room,
-            isChannel: true,
-            recieverId: "",
-        }
         return (
-            <div className="cursor-pointer" onClick={() => props.toggleChat(currentChat)} key={room}>
+            <div className="cursor-pointer" onClick={() => props.toggleChat(room)} key={room}>
                 {room}
             </div>
         )
@@ -31,15 +26,9 @@ function Chat(props) {
                 </div>
             );
         }
-        const currentChat = {
-            chatName: user.username,
-            isChannel: false,
-            recieverId: user.id,
-        }
+
         return (
-            <div className="cursor-pointer" onClick={() => {
-                props.toggleChat(currentChat);
-            }} key={user.id}>
+            <div className="cursor-pointer" key={user.id}>
                 {user.username}
             </div>
         )
@@ -55,7 +44,7 @@ function Chat(props) {
     }
 
     let body;
-    if (!props.currentChat.isChannel || props.connectedRooms.includes(props.currentChat.chatName)) {
+    if (props.connectedRooms.includes(props.currentChat)) {
         body = (
             <div className="flex flex-col items-start">
                 {props.messages.map(renderMessages)}
@@ -65,7 +54,7 @@ function Chat(props) {
         body = (
             <button className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
             onClick={() => 
-                props.joinRoom(props.currentChat.chatName)}>Join {props.currentChat.chatName}
+                props.joinRoom(props.currentChat)}>Join {props.currentChat}
                 
             </button> 
         )
@@ -90,7 +79,7 @@ function Chat(props) {
             {/* Main Content: Chat Panel with Drawing Board */}
             <div className="chatPanel h-[100%] w-[85%] flex flex-col">
                 <div className="font-bold channelInfo h-[10%] w-full border-b border-black border-[1px] flex items-center justify-center">
-                    {props.currentChat.chatName}
+                    {props.currentChat}
                 </div>
 
                 {/* Flex container for Drawing Board and Chat */}
@@ -98,7 +87,7 @@ function Chat(props) {
                     {/* DrawBoard */}
                     <div className="w-[75%] p-4 border-r border-black">
                         <DrawBoard 
-                            room={props.currentChat.chatName}
+                            room={props.currentChat}
                             socketRef={props.socketRef}
                         />
                     </div>
