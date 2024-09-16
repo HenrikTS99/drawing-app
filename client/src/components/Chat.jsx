@@ -12,7 +12,8 @@ const rooms = [
 function Chat(props) {
     function renderRooms(room) {
         return (
-            <div className="cursor-pointer" onClick={() => props.toggleChat(room)} key={room}>
+            <div className="cursor-pointer" key={room} onClick={() => 
+                props.joinRoom(room)}>
                 {room}
             </div>
         )
@@ -44,21 +45,11 @@ function Chat(props) {
     }
 
     let body;
-    if (props.connectedRooms.includes(props.currentChat)) {
-        body = (
-            <div className="flex flex-col items-start">
-                {props.messages.map(renderMessages)}
-            </div>
-        );
-    } else {
-        body = (
-            <button className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
-            onClick={() => 
-                props.joinRoom(props.currentChat)}>Join {props.currentChat}
-                
-            </button> 
-        )
-    }
+    body = (
+        <div className="flex flex-col items-start">
+            {props.messages.map(renderMessages)}
+        </div>
+    );
 
     function handleKeyPress(e) {
         if (e.key === "Enter") {

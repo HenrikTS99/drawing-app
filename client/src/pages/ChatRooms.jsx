@@ -17,7 +17,7 @@ function ChatRooms() {
   const [username, setUsername] = useState("");
   const [connected, setConnected] = useState(false);
   const [currentChat, setCurrentChat] = useState("general")
-  const [connectedRooms, setConnectedRooms ] = useState(['general']);
+  const [previousChat, setpreviousChat] = useState("")
   const [allUsers, setAllUsers] = useState([]);
   const [messages, setMessages] = useState(initialMessagesState)
   const [message, setMessage] = useState("")
@@ -60,11 +60,13 @@ function ChatRooms() {
   }
 
   function joinRoom(room) {
-    const newConnectedRooms = produce(connectedRooms, draft => {
-      draft.push(room);
-    });
-    socketRef.current.emit('join-room', room);
-    setConnectedRooms(newConnectedRooms)
+    if(room === currentChat) {
+      console.log('Already in room:', room)
+      return
+    }
+    toggleChat(room)
+    console.log('joining room:', room, 'previous room:', previousChat)
+    socketRef.current.emit('join-room', room, previousChat);
   }
 
   function toggleChat(currentChat) {
@@ -87,8 +89,9 @@ function ChatRooms() {
       setAllUsers(allUsers)
     });
 
-    socketRef.current.on('joined-room', ({ messages, room }) => {
+    socketRef.current.on('joined-room', ({ messages, room, previousRoom }) => {
       updateRoomMessages(messages, room)
+      if (previousRoom) setpreviousChat(previousRoom)
     });
 
     socketRef.current.on('new-message', ({ content, sender, chatName }) => {
@@ -115,8 +118,8 @@ function ChatRooms() {
       yourId={socketRef.current ? socketRef.current.id : ""}
       allUsers={allUsers}
       joinRoom={joinRoom}
-      connectedRooms={connectedRooms}
       currentChat={currentChat}
+      previousChat={previousChat}
       toggleChat={toggleChat}
       messages={messages[currentChat]}
       socketRef={socketRef}

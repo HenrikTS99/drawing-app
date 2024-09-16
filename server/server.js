@@ -20,6 +20,18 @@ const io = new Server(server, {
   },
 });
 
+// Middleware for parsing request body
+app.use(express.json());
+
+// Middleware for handling CORS POLICY
+app.use(cors());
+// app.use(cors({
+//     origin: 'http://localhost:3000',
+//     methods: ['GET', 'POST', 'PUT', 'DELETE'],
+//     allowedHeaders: ['Content-Type']
+//   })
+// );
+
 let canvasState = null;
 
 const canvasStates = {
@@ -43,7 +55,6 @@ io.on('connection', (socket) => {
   console.log('connection');
   
   socket.on('join-server', (username) => {
-    console.log("join server recieved")
     const user = {
       username, 
       id: socket.id,
@@ -52,13 +63,23 @@ io.on('connection', (socket) => {
     io.emit('new-user', users);
   });
 
-  socket.on('join-room', (roomName) => {
+  // Remove user from users when disconnecting
+  socket.on('disconnect', () => {
+    users = users.filter(u => u.id !== socket.id);
+    io.emit('new-user', users)
+  })
+
+  socket.on('join-room', (roomName, previousRoom) => {
+    if (previousRoom) {
+      socket.leave(previousRoom)
+      console.log(`left room ${previousRoom} and joined room ${roomName}`)
+    }
     socket.join(roomName);
-    socket.emit('joined-room', { messages: messages[roomName], room: roomName });
+    socket.emit('joined-room', { messages: messages[roomName], room: roomName, previousRoom: previousRoom });
+    
   });
 
   socket.on('send-message', ({content, sender, chatName}) => {
-
     const payload = {
       content, 
       sender,
@@ -72,12 +93,6 @@ io.on('connection', (socket) => {
         content
       });
     }
-  })
-
-  // Remove user from users when disconnecting
-  socket.on('disconnect', () => {
-    users = users.filter(u => u.id !== socket.id);
-    io.emit('new-user', users)
   })
 
   // Get canvas state from a client, for a new client
@@ -108,18 +123,6 @@ io.on('connection', (socket) => {
     io.to(room).emit('clear', room);
   });
 });
-
-// Middleware for parsing request body
-app.use(express.json());
-
-// Middleware for handling CORS POLICY
-app.use(cors());
-// app.use(cors({
-//     origin: 'http://localhost:3000',
-//     methods: ['GET', 'POST', 'PUT', 'DELETE'],
-//     allowedHeaders: ['Content-Type']
-//   })
-// );
 
 // Routes
 app.get('/api', (req, res) => {
