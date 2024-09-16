@@ -1,7 +1,8 @@
 import React, { useRef, useEffect, useState } from 'react'
 import Form from '../components/UsernameForm'
-import Chat from '../components/Chat'
-import DrawBoard from '../components/DrawBoard'
+import RoomPanel from '../components/RoomPanel'
+import Sidebar from '../components/Sidebar'
+
 import { io } from 'socket.io-client'
 import { produce } from 'immer'
 
@@ -13,11 +14,11 @@ const initialMessagesState = {
   room4: [],
 }
 
-function ChatRooms() {
+function RoomDashboard() {
   const [username, setUsername] = useState("");
   const [connected, setConnected] = useState(false);
-  const [currentChat, setCurrentChat] = useState("general")
-  const [previousChat, setpreviousChat] = useState("")
+  const [currentRoom, setCurrentRoom] = useState("general")
+  const [previousRoom, setpreviousRoom] = useState("")
   const [allUsers, setAllUsers] = useState([]);
   const [messages, setMessages] = useState(initialMessagesState)
   const [message, setMessage] = useState("")
@@ -36,16 +37,16 @@ function ChatRooms() {
     const payload = {
       content: message,
       sender: username,
-      chatName: currentChat,
+      roomName: currentRoom,
     };
     socketRef.current.emit('send-message', payload);
-    const newMessages = produce(messages, draft => {
-      draft[currentChat].push({
-        sender: username,
-        content: message
-      });
-    });
-    setMessages(newMessages);
+    setMessages(prevMessages => 
+      produce(prevMessages, draft => {
+        draft[currentRoom].push({
+          sender: username,
+          content: message
+        });
+    }));
   }
 
   function updateRoomMessages(incomingMessages, room) {
@@ -60,20 +61,20 @@ function ChatRooms() {
   }
 
   function joinRoom(room) {
-    if(room === currentChat) {
+    if(room === currentRoom) {
       console.log('Already in room:', room)
       return
     }
-    toggleChat(room)
-    console.log('joining room:', room, 'previous room:', previousChat)
-    socketRef.current.emit('join-room', room, previousChat);
+    toggleRoom(room)
+    console.log('joining room:', room, 'previous room:', currentRoom)
+    socketRef.current.emit('join-room', room, currentRoom);
   }
 
-  function toggleChat(currentChat) {
-    if (!messages[currentChat]) {
-      console.error("Chat dosen't exist:", currentChat);
+  function toggleRoom(currentRoom) {
+    if (!messages[currentRoom]) {
+      console.error("Room dosen't exist:", currentRoom);
     }
-    setCurrentChat(currentChat)
+    setCurrentRoom(currentRoom)
   }
 
   function handleChange(e) {
@@ -91,50 +92,54 @@ function ChatRooms() {
 
     socketRef.current.on('joined-room', ({ messages, room, previousRoom }) => {
       updateRoomMessages(messages, room)
-      if (previousRoom) setpreviousChat(previousRoom)
+      if (previousRoom) setpreviousRoom(previousRoom)
     });
 
-    socketRef.current.on('new-message', ({ content, sender, chatName }) => {
-      setMessages(messages => {
-        const newMessages = produce(messages, draft => {
-          if (draft[chatName]) {
-            draft[chatName].push({ content, sender })
-          } else {
-            console.error("Chat dosen't exist:", chatName);
-          }
-        });
-        return newMessages
-      })
+    socketRef.current.on('new-message', ({ content, sender, roomName }) => {
+      setMessages(messages => produce(messages, draft => {
+        if (draft[roomName]) {
+          draft[roomName].push({ content, sender })
+        } else {
+          console.error("Room dosen't exist:", roomName);
+        }
+      }));
     });
   }
 
   let body;
   if (connected) {
     body = (
-      <Chat
-      message={message}
-      handleMessageChange={handleMessageChange}
-      sendMessage={sendMessage}
-      yourId={socketRef.current ? socketRef.current.id : ""}
-      allUsers={allUsers}
-      joinRoom={joinRoom}
-      currentChat={currentChat}
-      previousChat={previousChat}
-      toggleChat={toggleChat}
-      messages={messages[currentChat]}
-      socketRef={socketRef}
-    />
+      <div className="h-screen w-full flex">
+          {/* sidebar */}
+          <Sidebar
+              allUsers={allUsers}
+              joinRoom={joinRoom}
+              yourId={socketRef.current ? socketRef.current.id : ""}
+          />
+        <RoomPanel
+        message={message}
+        handleMessageChange={handleMessageChange}
+        sendMessage={sendMessage}
+        allUsers={allUsers}
+        joinRoom={joinRoom}
+        currentRoom={currentRoom}
+        previousRoom={previousRoom}
+        toggleRoom={toggleRoom}
+        messages={messages[currentRoom]}
+        socketRef={socketRef}
+        />
+      </div>
     )
   } else {
     body= (
       <Form username={username} onChange={handleChange} connect={connect} />
     )
   }
-    return (
-      <div className="Chatrooms">
-        {body}
-      </div>
-    );
-  }
+  return (
+    <div className="Chatrooms">
+      {body}
+    </div>
+  );
+}
 
-export default ChatRooms;
+export default RoomDashboard;

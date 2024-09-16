@@ -1,10 +1,10 @@
 import { Routes, Route } from "react-router-dom";
-import ChatRooms from "./pages/ChatRooms"
+import RoomDashboard from "./pages/RoomDashboard"
 
 function App() {
   return (
     <Routes>
-      <Route path="/" element={<ChatRooms />} />
+      <Route path="/" element={<RoomDashboard />} />
     </Routes>
   );
 }

@@ -32,8 +32,6 @@ app.use(cors());
 //   })
 // );
 
-let canvasState = null;
-
 const canvasStates = {
   general: null,
   room1: null,
@@ -79,16 +77,16 @@ io.on('connection', (socket) => {
     
   });
 
-  socket.on('send-message', ({content, sender, chatName}) => {
+  socket.on('send-message', ({content, sender, roomName}) => {
     const payload = {
       content, 
       sender,
-      chatName,
+      roomName,
     };
-    socket.to(chatName).emit('new-message', payload)
+    socket.to(roomName).emit('new-message', payload)
     
-    if (messages[chatName]) {
-      messages[chatName].push({
+    if (messages[roomName]) {
+      messages[roomName].push({
         sender,
         content
       });
