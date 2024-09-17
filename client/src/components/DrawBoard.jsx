@@ -1,26 +1,25 @@
 import React, { useEffect, useState } from 'react'
 import { useDraw } from '../hooks/useDraw'
 import { ChromePicker } from 'react-color'
-import { io } from 'socket.io-client'
 import { drawLine } from '../utils/drawLine'
-const socket = io('http://localhost:3001')
 
-const Home = () => {
+const DrawBoard = ({ room, socketRef }) => {
+  const socket = socketRef.current
   const [color, setColor] = useState('#000')
   const { canvasRef, onMouseDown, clear } = useDraw(createLine)
 
   useEffect(() => {
     const context = canvasRef.current?.getContext('2d')
-
-    socket.emit('client-ready')
-
+    clear()
+    socket.emit('client-ready', room)
+    
     socket.on('get-canvas-state', () => {
       if (!canvasRef.current?.toDataURL()) return
-      socket.emit('canvas-state', canvasRef.current.toDataURL())
+      socket.emit('canvas-state', { room, state:canvasRef.current.toDataURL() })
     })
 
     socket.on('canvas-state-from-server', (state) => {
-      console.log('canvas state recieved.')
+      console.log('canvas state recieved.', state.slice(0, 20))
       const img = new Image()
       img.src = state
       img.onload = () => {
@@ -29,35 +28,61 @@ const Home = () => {
     })
 
     socket.on('draw-line', ({ prevPoint, currentPoint, color }) => {
+      console.log('drawing line...')
       if (!context) return
       drawLine({ prevPoint, currentPoint, context, color })
     })
 
-    socket.on('clear', clear)
+    socket.on('clear', (recievedRoom) => {
+      if (recievedRoom === room) {
+        console.log('correct room, clearing')
+        clear()
+      } else {
+        console.log('wrong room to clear', recievedRoom, room)
+      }
+    })
 
+    window.addEventListener('beforeunload', saveCanvas);
     return () => {
+      saveCanvas()
+      window.removeEventListener('beforeunload', saveCanvas);
       socket.off('get-canvas-state')
       socket.off('canvas-state-from-server')
       socket.off('draw-line')
       socket.off('clear')
     }
-  }, [canvasRef])
+  }, [canvasRef, room])
+
+  function saveCanvas() {
+    console.log('saving canvas for room:', room)
+    if(canvasRef.current) {
+      if (!canvasRef.current?.toDataURL()) return
+      socket.emit('save-canvas', { room, state:canvasRef.current.toDataURL() })
+    }
+  }
 
   function createLine({ prevPoint, currentPoint, context }) {
-    socket.emit('draw-line', { prevPoint, currentPoint, color })
+    socket.emit('draw-line', { room, prevPoint, currentPoint, color })
     drawLine({ prevPoint, currentPoint, context, color })
   }
 
   return (
-    <div className="w-screen h-screen bg-white flex justify-center items-center">
+    <div className="bg-white flex justify-center items-center">
       <div className="flex flex-col gap-10 pr-10">
         <ChromePicker color={color} onChange={(e) => setColor(e.hex)} />
         <button
           type="button"
           className="p-2 rounded-md border border-black"
-          onClick={() => socket.emit('clear')}
+          onClick={() => socket.emit('clear', room)}
         >
           Clear canvas
+        </button>
+        <button
+          type="button"
+          className="p-2 rounded-md border border-black"
+          onClick={() => saveCanvas()}
+        >
+          Save canvas
         </button>
       </div>
       <canvas
@@ -71,4 +96,4 @@ const Home = () => {
   )
 }
 
-export default Home
+export default DrawBoard

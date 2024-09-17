@@ -20,7 +20,26 @@ const io = new Server(server, {
   },
 });
 
-let canvasState = null;
+// Middleware for parsing request body
+app.use(express.json());
+
+// Middleware for handling CORS POLICY
+app.use(cors());
+// app.use(cors({
+//     origin: 'http://localhost:3000',
+//     methods: ['GET', 'POST', 'PUT', 'DELETE'],
+//     allowedHeaders: ['Content-Type']
+//   })
+// );
+
+const canvasStates = {
+  general: null,
+  room1: null,
+  room2: null,
+  room3: null,
+  room4: null
+}
+
 let users = [];
 const messages = {
   general: [],
@@ -34,7 +53,6 @@ io.on('connection', (socket) => {
   console.log('connection');
   
   socket.on('join-server', (username) => {
-    console.log("join server recieved")
     const user = {
       username, 
       id: socket.id,
@@ -43,78 +61,74 @@ io.on('connection', (socket) => {
     io.emit('new-user', users);
   });
 
-  socket.on('join-room', (roomName, cb) => { //TODO: not safe to use callback from client
+  // Remove user from users when disconnecting
+  socket.on('disconnect', () => {
+    users = users.filter(u => u.id !== socket.id);
+    io.emit('new-user', users)
+  })
+
+
+  socket.on('join-room', (roomName, previousRoom) => {
+    if (previousRoom) {
+      socket.leave(previousRoom)
+    }
     socket.join(roomName);
-    cb(messages[roomName]);
+    socket.emit('joined-room', { messages: messages[roomName], room: roomName, previousRoom: previousRoom });
+    
   });
 
-  socket.on('send-message', ({content, to, sender, chatName, isChannel }) => {
-    if (isChannel) {
-      const payload = {
-        content, 
-        chatName,
-        sender,
-      };
-      socket.to(to).emit('new-message', payload)
-    } else {
-      const payload = {
-        content, 
-        chatName: sender,
-        sender
-      };
-      socket.to(to).emit('new-message', payload)
-    }
-    if (messages[chatName]) {
-      messages[chatName].push({
+  socket.on('send-message', ({content, sender, roomName}) => {
+    const payload = {
+      content, 
+      sender,
+      roomName,
+    };
+    socket.to(roomName).emit('new-message', payload)
+    
+    if (messages[roomName]) {
+      messages[roomName].push({
         sender,
         content
       });
     }
   })
 
-  socket.on('disconnect', () => {
-    users = users.filter(u => u.id !== socket.id);
-    io.emit('new-user', users)
-  })
-  
   // Get canvas state from a client, for a new client
-  socket.on('client-ready', () => {
-    if (canvasState) {
-      console.log('canvasState exists, udating from server storage')
-      socket.emit('canvas-state-from-server', canvasState);
+  socket.on('client-ready', async (room) => {
+    const users_in_room = (await io.in(room).fetchSockets()).length;
+    if (users_in_room > 1) {
+      console.log('fetching canvasState from clients')
+      socket.to(room).emit('get-canvas-state');
+    }
+    if (canvasStates[room]) {
+      console.log('canvasState exists, udating from server storage:', room)
+      socket.emit('canvas-state-from-server', canvasStates[room]);
     } else {
-      console.log('no canvasState in server storage, fetching from clients')
-      socket.broadcast.emit('get-canvas-state');
+      console.log('no canvas')
     }
     
   });
 
-  socket.on('canvas-state', (state) => {
-    canvasState = state;
-    socket.broadcast.emit('canvas-state-from-server', state);
+  socket.on('save-canvas', ({ room, state}) => {
+    canvasStates[room] = state;
+    console.log('saved canvas to room', room)
+  })
+  socket.on('canvas-state', ({ room, state }) => {
+    canvasStates[room] = state;
+    console.log('saved canvas to room', room)
+    socket.to(room).emit('canvas-state-from-server', state);
   });
 
-  socket.on('draw-line', ({ prevPoint, currentPoint, color }) => {
-    socket.broadcast.emit('draw-line', { prevPoint, currentPoint, color });
+  socket.on('draw-line', ({ room, prevPoint, currentPoint, color }) => {
+    socket.to(room).emit('draw-line', { prevPoint, currentPoint, color });
   });
 
-  socket.on('clear', () => {
-    canvasState = null;
-    io.emit('clear');
+  socket.on('clear', (room) => {
+    canvasStates[room] = null;
+    console.log('Emitting clear for room:', { recievedRoom: room });
+    io.to(room).emit('clear', room);
   });
 });
-
-// Middleware for parsing request body
-app.use(express.json());
-
-// Middleware for handling CORS POLICY
-app.use(cors());
-// app.use(cors({
-//     origin: 'http://localhost:3000',
-//     methods: ['GET', 'POST', 'PUT', 'DELETE'],
-//     allowedHeaders: ['Content-Type']
-//   })
-// );
 
 // Routes
 app.get('/api', (req, res) => {
