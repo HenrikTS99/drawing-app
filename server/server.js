@@ -67,10 +67,10 @@ io.on('connection', (socket) => {
     io.emit('new-user', users)
   })
 
+
   socket.on('join-room', (roomName, previousRoom) => {
     if (previousRoom) {
       socket.leave(previousRoom)
-      console.log(`left room ${previousRoom} and joined room ${roomName}`)
     }
     socket.join(roomName);
     socket.emit('joined-room', { messages: messages[roomName], room: roomName, previousRoom: previousRoom });
@@ -96,7 +96,7 @@ io.on('connection', (socket) => {
   // Get canvas state from a client, for a new client
   socket.on('client-ready', (room) => {
     if (canvasStates[room]) {
-      console.log('canvasState exists, udating from server storage')
+      console.log('canvasState exists, udating from server storage:', room)
       socket.emit('canvas-state-from-server', canvasStates[room]);
     } else {
       console.log('no canvasState in server storage, fetching from clients')
@@ -105,6 +105,10 @@ io.on('connection', (socket) => {
     
   });
 
+  socket.on('save-canvas', ({ room, state}) => {
+    canvasStates[room] = state;
+    console.log('saved canvas to room', room)
+  })
   socket.on('canvas-state', ({ room, state }) => {
     canvasStates[room] = state;
     console.log('saved canvas to room', room)

@@ -121,10 +121,8 @@ function RoomDashboard() {
         handleMessageChange={handleMessageChange}
         sendMessage={sendMessage}
         allUsers={allUsers}
-        joinRoom={joinRoom}
         currentRoom={currentRoom}
         previousRoom={previousRoom}
-        toggleRoom={toggleRoom}
         messages={messages[currentRoom]}
         socketRef={socketRef}
         />

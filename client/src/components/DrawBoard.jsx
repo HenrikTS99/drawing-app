@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { useDraw } from '../hooks/useDraw'
 import { ChromePicker } from 'react-color'
-import { io } from 'socket.io-client'
 import { drawLine } from '../utils/drawLine'
 
 const DrawBoard = ({ room, socketRef }) => {
@@ -11,16 +10,16 @@ const DrawBoard = ({ room, socketRef }) => {
 
   useEffect(() => {
     const context = canvasRef.current?.getContext('2d')
-
+    clear()
     socket.emit('client-ready', room)
-
+    
     socket.on('get-canvas-state', () => {
       if (!canvasRef.current?.toDataURL()) return
       socket.emit('canvas-state', { room, state:canvasRef.current.toDataURL() })
     })
 
     socket.on('canvas-state-from-server', (state) => {
-      console.log('canvas state recieved.')
+      console.log('canvas state recieved.', state.slice(0, 20))
       const img = new Image()
       img.src = state
       img.onload = () => {
@@ -51,6 +50,14 @@ const DrawBoard = ({ room, socketRef }) => {
     }
   }, [canvasRef, room])
 
+  function saveCanvas() {
+    console.log('saving canvas for room:', room)
+    if(canvasRef.current) {
+      if (!canvasRef.current?.toDataURL()) return
+      socket.emit('save-canvas', { room, state:canvasRef.current.toDataURL() })
+    }
+  }
+
   function createLine({ prevPoint, currentPoint, context }) {
     socket.emit('draw-line', { room, prevPoint, currentPoint, color })
     drawLine({ prevPoint, currentPoint, context, color })
@@ -66,6 +73,13 @@ const DrawBoard = ({ room, socketRef }) => {
           onClick={() => socket.emit('clear', room)}
         >
           Clear canvas
+        </button>
+        <button
+          type="button"
+          className="p-2 rounded-md border border-black"
+          onClick={() => saveCanvas()}
+        >
+          Save canvas
         </button>
       </div>
       <canvas
