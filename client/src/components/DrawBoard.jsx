@@ -42,7 +42,10 @@ const DrawBoard = ({ room, socketRef }) => {
       }
     })
 
+    window.addEventListener('beforeunload', saveCanvas);
     return () => {
+      saveCanvas()
+      window.removeEventListener('beforeunload', saveCanvas);
       socket.off('get-canvas-state')
       socket.off('canvas-state-from-server')
       socket.off('draw-line')

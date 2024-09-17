@@ -94,13 +94,17 @@ io.on('connection', (socket) => {
   })
 
   // Get canvas state from a client, for a new client
-  socket.on('client-ready', (room) => {
+  socket.on('client-ready', async (room) => {
+    const users_in_room = (await io.in(room).fetchSockets()).length;
+    if (users_in_room > 1) {
+      console.log('fetching canvasState from clients')
+      socket.to(room).emit('get-canvas-state');
+    }
     if (canvasStates[room]) {
       console.log('canvasState exists, udating from server storage:', room)
       socket.emit('canvas-state-from-server', canvasStates[room]);
     } else {
-      console.log('no canvasState in server storage, fetching from clients')
-      socket.to(room).emit('get-canvas-state');
+      console.log('no canvas')
     }
     
   });
