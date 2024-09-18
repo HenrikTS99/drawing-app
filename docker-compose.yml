@@ -1,0 +1,20 @@
+services:
+  react-app:
+    build: ./client
+    container_name: drawing-app-client
+    stdin_open: true
+    tty: true
+    ports:
+      - "5173:5173"
+    networks:
+      - drawing-app
+  server:
+    build: ./server
+    container_name: drawing-app-server
+    ports:
+      - "3001:3001"
+    networks:
+      - drawing-app
+networks:
+  drawing-app:
+    driver: bridge
