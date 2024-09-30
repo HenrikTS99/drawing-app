@@ -6,6 +6,7 @@ import Sidebar from "../components/Sidebar"
 import { io } from "socket.io-client"
 import { produce } from "immer"
 
+let unusedVar = null
 const initialMessagesState = {
   general: [],
   room1: [],
