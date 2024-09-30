@@ -1,13 +1,38 @@
 name: Docker Image CI
-on: push
+on:
+  push:
+  pull_request:
 
 jobs:
-    build-container:
+  build-container:
+    runs-on: ubuntu-latest
 
-        runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
 
-        steps:
-            - uses: actions/checkout@v4
-            - name: Build and run docker image
-              run: docker compose up -d
-        
+      - name: Install dependencies in client directory
+        run: npm install
+        working-directory: ./client
+
+      - name: Run Prettier in client directory
+        run: npm run prettier
+        working-directory: ./client
+
+      - name: Run ESLint in client directory
+        run: npm run lint
+        working-directory: ./client
+
+      - name: Install dependencies in server directory
+        run: npm install
+        working-directory: ./server
+
+      - name: Run Prettier in server directory
+        run: npm run prettier
+        working-directory: ./server
+
+      - name: Run ESLint in server directory
+        run: npm run lint
+        working-directory: ./server
+
+      - name: Build and run docker image
+        run: docker compose up -d
