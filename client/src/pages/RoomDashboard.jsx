@@ -6,7 +6,6 @@ import Sidebar from "../components/Sidebar"
 import { io } from "socket.io-client"
 import { produce } from "immer"
 
-let unusedVar = null
 const initialMessagesState = {
   general: [],
   room1: [],
@@ -19,7 +18,7 @@ function RoomDashboard() {
   const [username, setUsername] = useState("")
   const [connected, setConnected] = useState(false)
   const [currentRoom, setCurrentRoom] = useState("general")
-  const [previousRoom, setpreviousRoom] = useState("")
+  const [previousRoom, setPreviousRoom] = useState("")
   const [allUsers, setAllUsers] = useState([])
   const [messages, setMessages] = useState(initialMessagesState)
   const [message, setMessage] = useState("")
@@ -74,7 +73,7 @@ function RoomDashboard() {
 
   function toggleRoom(currentRoom) {
     if (!messages[currentRoom]) {
-      console.error("Room dosen't exist:", currentRoom)
+      console.error("Room doesn't exist:", currentRoom)
     }
     setCurrentRoom(currentRoom)
   }
@@ -94,7 +93,7 @@ function RoomDashboard() {
 
     socketRef.current.on("joined-room", ({ messages, room, previousRoom }) => {
       updateRoomMessages(messages, room)
-      if (previousRoom) setpreviousRoom(previousRoom)
+      if (previousRoom) setPreviousRoom(previousRoom)
     })
 
     socketRef.current.on("new-message", ({ content, sender, roomName }) => {
@@ -103,7 +102,7 @@ function RoomDashboard() {
           if (draft[roomName]) {
             draft[roomName].push({ content, sender })
           } else {
-            console.error("Room dosen't exist:", roomName)
+            console.error("Room doesn't exist:", roomName)
           }
         }),
       )

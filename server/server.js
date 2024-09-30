@@ -102,7 +102,7 @@ io.on("connection", (socket) => {
       socket.to(room).emit("get-canvas-state");
     }
     if (canvasStates[room]) {
-      console.log("canvasState exists, udating from server storage:", room);
+      console.log("canvasState exists, updating from server storage:", room);
       socket.emit("canvas-state-from-server", canvasStates[room]);
     } else {
       console.log("no canvas");
@@ -125,7 +125,7 @@ io.on("connection", (socket) => {
 
   socket.on("clear", (room) => {
     canvasStates[room] = null;
-    console.log("Emitting clear for room:", { recievedRoom: room });
+    console.log("Emitting clear for room:", { receivedRoom: room });
     io.to(room).emit("clear", room);
   });
 });

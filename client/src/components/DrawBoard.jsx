@@ -23,7 +23,7 @@ const DrawBoard = ({ room, socketRef }) => {
     })
 
     socket.on("canvas-state-from-server", (state) => {
-      console.log("canvas state recieved.", state.slice(0, 20))
+      console.log("canvas state received.", state.slice(0, 20))
       const img = new Image()
       img.src = state
       img.onload = () => {
@@ -37,12 +37,12 @@ const DrawBoard = ({ room, socketRef }) => {
       drawLine({ prevPoint, currentPoint, context, color })
     })
 
-    socket.on("clear", (recievedRoom) => {
-      if (recievedRoom === room) {
+    socket.on("clear", (receivedRoom) => {
+      if (receivedRoom === room) {
         console.log("correct room, clearing")
         clear()
       } else {
-        console.log("wrong room to clear", recievedRoom, room)
+        console.log("wrong room to clear", receivedRoom, room)
       }
     })
 
