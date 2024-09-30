@@ -1,5 +1,5 @@
 export const drawLine = ({ prevPoint, currentPoint, context, color }) => {
-  const { x: currX, y:currY } = currentPoint
+  const { x: currX, y: currY } = currentPoint
   const lineColor = color
   const lineWidth = 5
 
