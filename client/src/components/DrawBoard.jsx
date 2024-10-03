@@ -2,6 +2,9 @@ import React, { useEffect, useState } from "react"
 import { useDraw } from "../hooks/useDraw"
 import { ChromePicker } from "react-color"
 import { drawLine } from "../utils/drawLine"
+import DownloadImageButton from "./buttons/DownloadImageButton"
+import CopyImageButton from "./buttons/CopyImageButton"
+import ButtonBase from "./buttons/ButtonBase"
 import PropTypes from "prop-types"
 
 const DrawBoard = ({ room, socketRef }) => {
@@ -77,20 +80,12 @@ const DrawBoard = ({ room, socketRef }) => {
     <div className="bg-white flex justify-center items-center">
       <div className="flex flex-col gap-10 pr-10">
         <ChromePicker color={color} onChange={(e) => setColor(e.hex)} />
-        <button
-          type="button"
-          className="p-2 rounded-md border border-black"
-          onClick={() => socket.emit("clear", room)}
-        >
-          Clear canvas
-        </button>
-        <button
-          type="button"
-          className="p-2 rounded-md border border-black"
-          onClick={() => saveCanvas()}
-        >
-          Save canvas
-        </button>
+        <ButtonBase
+          label="Clear canvas"
+          onClickFunc={() => socket.emit("clear", room)}
+        ></ButtonBase>
+        <DownloadImageButton canvas={canvasRef.current} />
+        <CopyImageButton canvas={canvasRef.current} />
       </div>
       <canvas
         onMouseDown={onMouseDown}
