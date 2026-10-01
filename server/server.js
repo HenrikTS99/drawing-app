@@ -140,14 +140,15 @@ app.get("/", (req, res) => {
 });
 
 // Start the server
+server.listen(port, () => {
+  console.log(`Server is running on http://localhost:${port}`);
+});
+
 mongoose
   .connect(mongoDBURL)
   .then(() => {
     console.log("App connected to database");
-    server.listen(port, () => {
-      console.log(`Server is running on http://localhost:${port}`);
-    });
   })
   .catch((error) => {
-    console.log(error);
+    console.log("Database not available:", error?.message);
   });
